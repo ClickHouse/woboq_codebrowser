@@ -148,8 +148,8 @@ void gererateRecursisively(FolderInfo *folder, const std::string &root, const st
         const std::string &name = it.first;
         if (it.second) {
             gererateRecursisively(it.second.get(), root, path+name+"/", rel + "../");
-            myfile << "<tr><td class='folder'><a href='"<< name <<"/' class='opener' data-path='" << path << name << "'>[+]</a> "
-                      "<a href='" << name << "/'>" << name << "/</a></td><td></td></tr>\n";
+            myfile << "<tr><td class='folder'><a href='"<< name <<"/index.html' class='opener' data-path='" << path << name << "'>[+]</a> "
+                      "<a href='" << name << "/index.html'>" << name << "/</a></td><td></td></tr>\n";
         } else {
             std::string interestingDefintions = extractMetaFromHTML("woboq:interestingDefinitions", root + "/" + path + name + ".html");
             myfile << "<tr><td class='file'>    <a href='" << name << ".html'>"
