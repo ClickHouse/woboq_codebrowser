@@ -182,13 +182,13 @@ void Generator::generate(llvm::StringRef outputPrefix, std::string dataPath, con
                 myfile << "/..";
             }
             auto split = tail.split('/');
-            myfile << "'>" << split.first.str() << "</a>/";
+            myfile << "/index.html'>" << split.first.str() << "</a>/";
 
             tail = split.second;
             ++i;
         }
         auto split = tail.split('/');
-        myfile << "<a href='./'>" << split.first.str() << "</a>/";
+        myfile << "<a href='./index.html'>" << split.first.str() << "</a>/";
         myfile << "<a href='" << split.second.str() << ".html'>" << split.second.str() << "</a>";
     }
     myfile << "</h1></div>\n<hr/><div id='content'>";
