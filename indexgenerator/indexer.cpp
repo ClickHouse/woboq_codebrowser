@@ -108,17 +108,17 @@ void gererateRecursisively(FolderInfo *folder, const std::string &root, const st
       while (pos > 0 && (next_pos = path.rfind('/', pos-1)) < path.size()) {
           if (pos != next_pos +1) {
               parent += "../";
-              breadcrumb = "<a href='" + parent + "/index.html'>" + path.substr(next_pos + 1, pos - next_pos - 1) + "</a>/" + breadcrumb;
+              breadcrumb = "<a href='" + parent + "index.html'>" + path.substr(next_pos + 1, pos - next_pos - 1) + "</a>/" + breadcrumb;
           }
           pos = next_pos;
       }
       if (pos > 1) {
           parent += "../";
-          breadcrumb = "<a href='" + parent + "/index.html'>" + path.substr(0, pos) + "</a>/" + breadcrumb;
+          breadcrumb = "<a href='" + parent + "index.html'>" + path.substr(0, pos) + "</a>/" + breadcrumb;
       }
     }
     if (path.length() > 0) {
-        breadcrumb = "<a href='../" + parent +"/index.html'>" + project + "</a>/" + breadcrumb;
+        breadcrumb = "<a href='../" + parent + "/index.html'>" + project + "</a>/" + breadcrumb;
     } else {
         breadcrumb = "<a href=''>" + project + "</a>/" + breadcrumb;
     }
@@ -141,7 +141,7 @@ void gererateRecursisively(FolderInfo *folder, const std::string &root, const st
 
     //if (!path.empty())
     {
-        myfile << " <tr><td class='parent'>    <a href='../'>../</a></td><td></td></tr>\n";
+        myfile << " <tr><td class='parent'>    <a href='../index.html'>../</a></td><td></td></tr>\n";
     }
 
     for (auto it : folder->subfolders) {
