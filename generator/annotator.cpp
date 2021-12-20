@@ -1039,7 +1039,7 @@ void Annotator::syntaxHighlight(Generator &generator, clang::FileID FID, clang::
     clang::Preprocessor &PP = Sema.getPreprocessor();
     const clang::SourceManager &SM = getSourceMgr();
     llvm::MemoryBufferRef FromFile = SM.getBufferOrFake(FID);
-    Lexer L(FID, FromFile, PP);
+    Lexer L(FID, FromFile, SM, getLangOpts());
     const char *BufferStart = FromFile.getBufferStart();
     const char *BufferEnd = FromFile.getBufferEnd();
 
