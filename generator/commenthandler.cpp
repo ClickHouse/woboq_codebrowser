@@ -41,13 +41,12 @@ clang::NamedDecl *parseDeclarationReference(llvm::StringRef Text, clang::Sema &S
     clang::Preprocessor &PP = Sema.getPreprocessor();
 
     auto Buf = llvm::MemoryBuffer::getMemBufferCopy(Text);
-    llvm::MemoryBuffer *Buf2 = &*Buf;
 #if CLANG_VERSION_MAJOR == 3 && CLANG_VERSION_MINOR <= 4
     auto FID = PP.getSourceManager().createFileIDForMemBuffer(Buf);
 #else
-    auto FID = PP.getSourceManager().createFileID(std::move(Buf));
+    auto FID = PP.getSourceManager().createFileID(Buf->getMemBufferRef());
 #endif
-    clang::Lexer Lex(FID, Buf2, PP.getSourceManager(), PP.getLangOpts());
+    clang::Lexer Lex(FID, Buf->getMemBufferRef(), PP.getSourceManager(), PP.getLangOpts());
 
     auto TuDecl = Sema.getASTContext().getTranslationUnitDecl();
     clang::CXXScopeSpec SS;
@@ -96,7 +95,7 @@ clang::NamedDecl *parseDeclarationReference(llvm::StringRef Text, clang::Sema &S
                         if (!Next.is(clang::tok::eof) && !Next.is(clang::tok::l_paren))
                             return nullptr;
                         auto Result = T2->lookup(II);
-                        if (Result.size() != 1)
+                        if (!Result.isSingleResult())
                             return nullptr;
                         auto D = Result.front();
                         if (isFunction && (llvm::isa<clang::RecordDecl>(D)
