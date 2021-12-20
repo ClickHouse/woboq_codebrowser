@@ -127,7 +127,7 @@ void Generator::generate(llvm::StringRef outputPrefix, std::string dataPath, con
     }
 #else
     std::error_code error_code;
-    llvm::raw_fd_ostream myfile(real_filename, error_code, llvm::sys::fs::F_None);
+    llvm::raw_fd_ostream myfile(real_filename, error_code, llvm::sys::fs::OF_None);
     if (error_code) {
         std::cerr << "Error generating " << real_filename << " ";
         std::cerr << error_code.message() << std::endl;

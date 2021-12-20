@@ -296,9 +296,9 @@ bool Annotator::generate(clang::Sema &Sema, bool WasInDatabase)
         title=\"Arguments: << " << Generator::escapeAttr(args)   <<"\"" */
 
         // Emit the HTML.
-        const llvm::MemoryBuffer *Buf = getSourceMgr().getBuffer(FID);
+        llvm::MemoryBufferRef Buf = getSourceMgr().getBufferOrFake(FID);
         g.generate(projectManager.outputPrefix, projectManager.dataPath, fn,
-                   Buf->getBufferStart(), Buf->getBufferEnd(), footer,
+                   Buf.getBufferStart(), Buf.getBufferEnd(), footer,
                    WasInDatabase ? "" : "Warning: That file was not part of the compilation database. "
                                         "It may have many parsing errors.",
                    interestingDefinitionsInFile[FID]);
@@ -324,14 +324,14 @@ bool Annotator::generate(clang::Sema &Sema, bool WasInDatabase)
         std::string filename = projectManager.outputPrefix % "/refs/" % refFilename;
 #if CLANG_VERSION_MAJOR==3 && CLANG_VERSION_MINOR<=5
         std::string error;
-        llvm::raw_fd_ostream myfile(filename.c_str(), error, llvm::sys::fs::F_Append);
+        llvm::raw_fd_ostream myfile(filename.c_str(), error, llvm::sys::fs::OF_Append);
         if (!error.empty()) {
             std::cerr << error<< std::endl;
             continue;
         }
 #else
         std::error_code error_code;
-        llvm::raw_fd_ostream myfile(filename, error_code, llvm::sys::fs::F_Append);
+        llvm::raw_fd_ostream myfile(filename, error_code, llvm::sys::fs::OF_Append);
         if (error_code) {
             std::cerr << "Error writing ref file " << filename << ": " << error_code.message() << std::endl;
             continue;
@@ -475,14 +475,14 @@ bool Annotator::generate(clang::Sema &Sema, bool WasInDatabase)
                 std::string funcIndexFN = projectManager.outputPrefix % "/fnSearch/" % idx;
 #if CLANG_VERSION_MAJOR==3 && CLANG_VERSION_MINOR<=5
                 std::string error;
-                llvm::raw_fd_ostream funcIndexFile(funcIndexFN.c_str(), error, llvm::sys::fs::F_Append);
+                llvm::raw_fd_ostream funcIndexFile(funcIndexFN.c_str(), error, llvm::sys::fs::OF_Append);
                 if (!error.empty()) {
                     std::cerr << error << std::endl;
                     return false;
                 }
 #else
                 std::error_code error_code;
-                llvm::raw_fd_ostream funcIndexFile(funcIndexFN, error_code, llvm::sys::fs::F_Append);
+                llvm::raw_fd_ostream funcIndexFile(funcIndexFN, error_code, llvm::sys::fs::OF_Append);
                 if (error_code) {
                     std::cerr << "Error writing index file " << funcIndexFN << ": " << error_code.message() << std::endl;
                     continue;
@@ -1036,12 +1036,12 @@ std::string Annotator::computeClas(clang::NamedDecl* decl)
 void Annotator::syntaxHighlight(Generator &generator, clang::FileID FID, clang::Sema &Sema) {
     using namespace clang;
 
-    const clang::Preprocessor &PP = Sema.getPreprocessor();
+    clang::Preprocessor &PP = Sema.getPreprocessor();
     const clang::SourceManager &SM = getSourceMgr();
-    const llvm::MemoryBuffer *FromFile = SM.getBuffer(FID);
-    Lexer L(FID, FromFile, SM, getLangOpts());
-    const char *BufferStart = FromFile->getBufferStart();
-    const char *BufferEnd = FromFile->getBufferEnd();
+    llvm::MemoryBufferRef FromFile = SM.getBufferOrFake(FID);
+    Lexer L(FID, FromFile, PP);
+    const char *BufferStart = FromFile.getBufferStart();
+    const char *BufferEnd = FromFile.getBufferEnd();
 
     // Inform the preprocessor that we want to retain comments as tokens, so we
     // can highlight them.
