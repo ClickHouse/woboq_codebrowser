@@ -50,11 +50,9 @@ a.logo { float:right }
     display:none;
     padding:1em;
     padding-top:1ex;
-    border: 1px solid gray;
+    border: 1px solid #EEE;
     background-color: white;
     font-size: smaller;
-    opacity: 0.9;
-    border-radius: 4px;
     max-width: 80%;
     box-shadow:1px 1px 7px gray;
     z-index:2;
