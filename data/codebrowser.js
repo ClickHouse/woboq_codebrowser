@@ -321,13 +321,7 @@ $(function () {
 
     var tooltip = {
         ref: "", //the 'ref' of the current symbol displayed
-        showTimerId : null,
-        hideTimerId : null,
         tooltip : {}, // set when the document is initialized
-        showDelay : 350,
-        normalHideDelay : 200, // time to hide the tooltip if the cursor was not on it
-        focusHideDelay: 700, // time to hide the tooltip after when it was hovered
-        hideDelay : this.normalHideDelay,
         gap : 12,
         elem : null,
 
@@ -336,10 +330,7 @@ $(function () {
             this.tooltip = $("#tooltip");
             var this_ = this;
             this.tooltip.hover(
-                function () {
-                    this_.hideDelay = this_.focusHideDelay;
-                    clearTimeout(this_.hideTimerId);
-                },
+                function () {},
                 function () { this_.hideAfterDelay(); }
             );
         },
@@ -364,28 +355,14 @@ $(function () {
         },
 
         showAfterDelay: function(elem, additionalFunction) {
-            //this.tooltip.hide();
-            clearTimeout(this.showTimerId)
-            var tt = this;
-            this.showTimerId = setTimeout( function() {
-                clearTimeout(tt.hideTimerId);
-                if (additionalFunction)
-                    additionalFunction();
-                tt.tooltip.stop(true, true);
-                tt.tooltip.fadeIn();
-                tt.setUnderElem(elem);
-                tt.hideDelay = tt.normalHideDelay;
-            }, this.showDelay);
+            if (additionalFunction)
+                additionalFunction();
+            this.tooltip.show();
+            this.setUnderElem(elem);
         },
 
         hideAfterDelay: function(e) {
-            clearTimeout(this.showTimerId);
-            clearTimeout(this.hideTimerId);
-            var tooltip = this.tooltip;
-            this.hideTimerId = setTimeout( function() {
-                tooltip.stop(true, true);
-                tooltip.fadeOut();
-            }, this.hideDelay);
+            this.tooltip.hide();
         },
 
         setHtml: function(html) {
