@@ -262,7 +262,7 @@ private:
         while(clang::isWhitespace(*begin))
             begin++;
         auto end = begin;
-        while(clang::isAsciiIdentifierContinue(*end))
+        while(clang::isIdentifierBody(*end))
             end++;
         llvm::StringRef value(begin, end-begin);
 
