@@ -262,7 +262,11 @@ private:
         while(clang::isWhitespace(*begin))
             begin++;
         auto end = begin;
+#if CLANG_VERSION_MAJOR >= 14
+        while(clang::isAsciiIdentifierContinue(*end))
+#else
         while(clang::isIdentifierBody(*end))
+#endif
             end++;
         llvm::StringRef value(begin, end-begin);
 
