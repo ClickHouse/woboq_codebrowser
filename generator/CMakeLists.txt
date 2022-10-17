@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.1)
 project(codebrowser_generator)
 
-Find_Package(LLVM 13 REQUIRED CONFIG)
+Find_Package(LLVM 15 REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION} in ${LLVM_INSTALL_PREFIX}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 Find_Package(Clang REQUIRED CONFIG HINTS "${LLVM_INSTALL_PREFIX}/lib/cmake/clang")
@@ -37,7 +37,7 @@ else()
 endif()
 
 install(TARGETS codebrowser_generator RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-target_include_directories(codebrowser_generator PUBLIC ${CLANG_INCLUDE_DIRS})
+target_include_directories(codebrowser_generator SYSTEM PUBLIC ${CLANG_INCLUDE_DIRS})
 set_property(TARGET codebrowser_generator PROPERTY CXX_STANDARD 20)
 
 
