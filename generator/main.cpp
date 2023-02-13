@@ -49,8 +49,8 @@ namespace cl = llvm::cl;
 
 cl::opt<std::string> BuildPath(
   "b",
-  cl::value_desc("compile_commands.json"),
-  cl::desc("Path to the compilation database (compile_commands.json) If this argument is not passed, the compilation arguments can be passed on the command line after '--'"),
+  cl::value_desc("build_path"),
+  cl::desc("Build path containing compilation database (compile_commands.json) If this argument is not passed, the compilation arguments can be passed on the command line after '--'"),
   cl::Optional);
 
 cl::list<std::string> SourcePaths(
@@ -97,7 +97,7 @@ Simple generation without compile command or project (compile command specified 
   codebrowser_generator -o ~/public_html/code -d https://code.woboq.org/data $PWD -- -std=c++14 -I/opt/llvm/include
 
 With a project
-  codebrowser_generator -b $PWD/compile_commands.js -a -p codebrowser:$PWD -o ~/public_html/code
+  codebrowser_generator -b $PWD/build -a -p codebrowser:$PWD -o ~/public_html/code
 )");
 
 #if 1
@@ -233,7 +233,8 @@ std::set<std::string> BrowserAction::processed;
 ProjectManager *BrowserAction::projectManager = nullptr;
 
 static bool proceedCommand(std::vector<std::string> command, llvm::StringRef Directory,
-                           llvm::StringRef file, clang::FileManager *FM, llvm::IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> FS, DatabaseType WasInDatabase) {
+                           llvm::StringRef file, clang::FileManager *FM,
+                           DatabaseType WasInDatabase) {
     // This code change all the paths to be absolute paths
     //  FIXME:  it is a bit fragile.
     bool previousIsDashI = false;
@@ -247,7 +248,7 @@ static bool proceedCommand(std::vector<std::string> command, llvm::StringRef Dir
         } else if (A == "-I") {
             previousIsDashI = true;
             continue;
-        } else if (A == "-nostdinc") {
+        } else if (A == "-nostdinc" || A == "-nostdinc++") {
           hasNoStdInc = true;
           continue;
         } else if (A == "-U" || A == "-D") {
@@ -296,6 +297,7 @@ static bool proceedCommand(std::vector<std::string> command, llvm::StringRef Dir
     command.push_back("-Wno-unknown-warning-option");
     clang::tooling::ToolInvocation Inv(command, maybe_unique(new BrowserAction(WasInDatabase)), FM);
 
+#if CLANG_VERSION_MAJOR <= 10
     if (!hasNoStdInc) {
       // Map the builtins includes
       const EmbeddedFile *f = EmbeddedFiles;
@@ -304,6 +306,8 @@ static bool proceedCommand(std::vector<std::string> command, llvm::StringRef Dir
           f++;
       }
     }
+#endif
+
     bool result = Inv.run();
     if (!result) {
         std::cerr << "Error: The file was not recognized as source code: " << file.str() <<  std::endl;
@@ -442,14 +446,28 @@ int main(int argc, const char **argv) {
         return EXIT_FAILURE;
     }
 
-    llvm::IntrusiveRefCntPtr<llvm::vfs::OverlayFileSystem> OverlayFileSystem(
-      new llvm::vfs::OverlayFileSystem(llvm::vfs::getRealFileSystem()));
-    llvm::IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> InMemoryFileSystem(
-      new llvm::vfs::InMemoryFileSystem);
-    OverlayFileSystem->pushOverlay(InMemoryFileSystem);
-
-    clang::FileManager FM({"."}, OverlayFileSystem);
+#if CLANG_VERSION_MAJOR >= 12
+    llvm::IntrusiveRefCntPtr<llvm::vfs::OverlayFileSystem> VFS(new llvm::vfs::OverlayFileSystem(llvm::vfs::getRealFileSystem()));
+    clang::FileManager FM({"."}, VFS);
+#else
+    clang::FileManager FM({"."});
+#endif
     FM.Retain();
+
+#if CLANG_VERSION_MAJOR >= 12
+    // Map virtual files
+    {
+        auto InMemoryFS = llvm::IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem>(new llvm::vfs::InMemoryFileSystem);
+        VFS->pushOverlay(InMemoryFS);
+        // Map the builtins includes
+        const EmbeddedFile *f = EmbeddedFiles;
+        while (f->filename) {
+            InMemoryFS->addFile(f->filename, 0, llvm::MemoryBuffer::getMemBufferCopy(f->content));
+            f++;
+        }
+    }
+#endif
+
     int Progress = 0;
 
     std::vector<std::string> NotInDB;
