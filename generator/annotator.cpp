@@ -1038,10 +1038,24 @@ void Annotator::syntaxHighlight(Generator &generator, clang::FileID FID, clang::
 
     clang::Preprocessor &PP = Sema.getPreprocessor();
     const clang::SourceManager &SM = getSourceMgr();
-    llvm::MemoryBufferRef FromFile = SM.getBufferOrFake(FID);
+#if CLANG_VERSION_MAJOR >= 16
+    const llvm::Optional<llvm::MemoryBufferRef> FromFile = SM.getBufferOrNone(FID);
+    if (!FromFile.has_value()) {
+        return;
+    }
+    Lexer L(FID, *FromFile, SM, getLangOpts());
+#elif CLANG_VERSION_MAJOR >= 12
+    const llvm::Optional<llvm::MemoryBufferRef> FromFile = SM.getBufferOrNone(FID);
+    if (!FromFile.hasValue()) {
+        return;
+    }
+    Lexer L(FID, FromFile.getValue(), SM, getLangOpts());
+#else
+    const llvm::MemoryBuffer *FromFile = SM.getBuffer(FID);
     Lexer L(FID, FromFile, SM, getLangOpts());
-    const char *BufferStart = FromFile.getBufferStart();
-    const char *BufferEnd = FromFile.getBufferEnd();
+#endif
+    const char *BufferStart = FromFile->getBufferStart();
+    const char *BufferEnd = FromFile->getBufferEnd();
 
     // Inform the preprocessor that we want to retain comments as tokens, so we
     // can highlight them.
