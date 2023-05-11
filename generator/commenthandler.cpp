@@ -41,12 +41,20 @@ clang::NamedDecl *parseDeclarationReference(llvm::StringRef Text, clang::Sema &S
     clang::Preprocessor &PP = Sema.getPreprocessor();
 
     auto Buf = llvm::MemoryBuffer::getMemBufferCopy(Text);
+    llvm::MemoryBuffer *Buf2 = &*Buf;
 #if CLANG_VERSION_MAJOR == 3 && CLANG_VERSION_MINOR <= 4
     auto FID = PP.getSourceManager().createFileIDForMemBuffer(Buf);
 #else
-    auto FID = PP.getSourceManager().createFileID(Buf->getMemBufferRef());
+    auto FID = PP.getSourceManager().createFileID(std::move(Buf));
 #endif
-    clang::Lexer Lex(FID, Buf->getMemBufferRef(), PP.getSourceManager(), PP.getLangOpts());
+
+
+#if CLANG_VERSION_MAJOR >= 12
+    auto MemBufRef = Buf2->getMemBufferRef();
+    clang::Lexer Lex(FID, MemBufRef, PP.getSourceManager(), PP.getLangOpts());
+#else
+    clang::Lexer Lex(FID, Buf2, PP.getSourceManager(), PP.getLangOpts());
+#endif
 
     auto TuDecl = Sema.getASTContext().getTranslationUnitDecl();
     clang::CXXScopeSpec SS;
@@ -95,8 +103,13 @@ clang::NamedDecl *parseDeclarationReference(llvm::StringRef Text, clang::Sema &S
                         if (!Next.is(clang::tok::eof) && !Next.is(clang::tok::l_paren))
                             return nullptr;
                         auto Result = T2->lookup(II);
-                        if (!Result.isSingleResult())
+#if CLANG_VERSION_MAJOR >= 13
+                        if (Result.isSingleResult())
                             return nullptr;
+#else
+                        if (Result.size() != 1)
+                            return nullptr;
+#endif
                         auto D = Result.front();
                         if (isFunction && (llvm::isa<clang::RecordDecl>(D)
                                     || llvm::isa<clang::ClassTemplateDecl>(D))) {
@@ -264,10 +277,11 @@ private:
         auto end = begin;
 #if CLANG_VERSION_MAJOR >= 14
         while(clang::isAsciiIdentifierContinue(*end))
+            end++;
 #else
         while(clang::isIdentifierBody(*end))
-#endif
             end++;
+#endif
         llvm::StringRef value(begin, end-begin);
 
         auto it = std::find_if(ED->enumerator_begin(), ED->enumerator_end(),
